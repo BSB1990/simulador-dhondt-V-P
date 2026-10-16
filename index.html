@@ -1,0 +1,69 @@
+<!DOCTYPE html><html lang="es"><head><meta charset="utf-8"><title>Trasvase Vox → PP · simulador d'Hondt</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<style>
+:root{--bg:#fafaf7;--fg:#1d1d1b;--mu:#6b6b66;--card:#fff;--bd:#dcdcd4;--win:#cfe8c4;--ac:#1f5fbf;box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#17181a;--fg:#ececE6;--mu:#9a9a94;--card:#222427;--bd:#383b3f;--win:#2f5a2b;--ac:#6ea0f0;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#17181a;--fg:#ececE6;--mu:#9a9a94;--card:#222427;--bd:#383b3f;--win:#2f5a2b;--ac:#6ea0f0;color-scheme:dark}
+html{scroll-padding-top:env(safe-area-inset-top,0px)}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--fg);font:15px/1.45 system-ui,Arial,sans-serif}
+main{max-width:1000px;margin:0 auto;padding:16px}
+h1{font-size:22px;margin:4px 0}p.s{color:var(--mu);margin:0 0 12px}
+.tabs{display:flex;flex-wrap:wrap;gap:6px;margin:10px 0}
+.tabs button{border:1px solid var(--bd);background:var(--card);color:var(--fg);padding:6px 11px;border-radius:16px;cursor:pointer;font:inherit}
+.tabs button.on{background:var(--ac);color:#fff;border-color:var(--ac)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:12px;padding:14px;margin:12px 0}
+.ctl{display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+.ctl input[type=range]{flex:1;min-width:200px}.ctl input[type=number]{width:110px;font:inherit;padding:4px;background:var(--bg);color:var(--fg);border:1px solid var(--bd);border-radius:6px}
+.ctl button{font:inherit;padding:5px 10px;border-radius:8px;border:1px solid var(--ac);background:none;color:var(--ac);cursor:pointer}
+#msg{font-weight:600;padding:10px 12px;border-radius:10px;margin:12px 0}
+.ok{background:#d9efd2;color:#1d4a14}.ko{background:#f6d6d3;color:#6b1a14}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]) .ok{background:#24431f;color:#cdeec4}:root:not([data-theme="light"]) .ko{background:#5a2420;color:#f6d0cc}}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:12px}@media(max-width:700px){.grid{grid-template-columns:1fr}}
+.bar{display:flex;align-items:center;gap:8px;margin:5px 0;font-size:13px}.bar .nm{width:52px}.bar .tr{flex:1;background:var(--bd);height:16px;border-radius:4px;overflow:hidden}.bar .fi{height:100%}.bar .v{width:78px;text-align:right;font-variant-numeric:tabular-nums}
+.dots{display:flex;flex-wrap:wrap;gap:4px;margin:6px 0 12px}.dot{width:22px;height:22px;border-radius:50%;display:inline-block}
+.dot.new{outline:3px solid var(--fg);outline-offset:1px}.lbl{font-size:12px;color:var(--mu);margin-top:8px}
+.tw{overflow-x:auto}table{border-collapse:collapse;font-size:13px;width:100%;font-variant-numeric:tabular-nums}th,td{border:1px solid var(--bd);padding:4px 7px;text-align:right;white-space:nowrap}th{background:var(--bg)}td.w{background:var(--win);font-weight:700}td:first-child,th:first-child{text-align:left}
+h2{font-size:16px;margin:0 0 6px}.foot{color:var(--mu);font-size:12px}
+</style></head><body><main>
+<h1>¿Y si Vox cediera votos al PP?</h1>
+<p class="s">Simulador de la ley d'Hondt en las 10 circunscripciones donde el PP puede ganar un escaño sin que Vox pierda ninguno. Mueve el deslizador y mira cómo cambia el reparto.</p>
+<div class="tabs" id="tabs"></div>
+<div class="card"><div class="ctl"><b>Votos transferidos Vox → PP:</b>
+<input type="range" id="rg" min="0" step="1"><input type="number" id="nb" min="0" step="1"><button id="mn">Poner el mínimo</button></div>
+<div id="msg"></div></div>
+<div class="grid"><div class="card"><h2>Votos</h2><div id="bars"></div></div>
+<div class="card"><h2>Escaños</h2><div class="lbl">Original</div><div class="dots" id="d0"></div><div class="lbl">Tras el trasvase (con borde: escaño ganado)</div><div class="dots" id="d1"></div></div></div>
+<div class="card"><h2>Tabla d'Hondt tras el trasvase</h2><div class="tw"><table id="tb"></table></div>
+<p class="foot">Verde: los N cocientes más altos. Empates de cociente: gana el partido con más votos totales. Se ignora la barrera del 3 %.</p></div>
+</main><script>
+const D=[{"n": "Sevilla", "N": 12, "x": 18200, "p": [["PP", 353663, 4], ["PSOE", 387760, 5], ["Vox", 141087, 1], ["Sumar", 148745, 2]]}, {"n": "Illes Balears", "N": 8, "x": 23079, "p": [["PP", 179303, 3], ["PSOE", 151786, 3], ["Vox", 76547, 1], ["Sumar", 83487, 1]]}, {"n": "Albacete", "N": 4, "x": 26184, "p": [["PP", 88299, 2], ["PSOE", 76322, 2], ["Vox", 36750, 0]]}, {"n": "Burgos", "N": 4, "x": 22334, "p": [["PP", 82329, 2], ["PSOE", 69775, 2], ["Vox", 25858, 0]]}, {"n": "Girona", "N": 6, "x": 285, "p": [["PP", 31341, 0], ["PSOE", 93448, 2], ["Vox", 22706, 0], ["Sumar", 35344, 1], ["ERC", 47531, 1], ["Junts", 63251, 2]]}, {"n": "Lleida", "N": 4, "x": 3509, "p": [["PP", 23699, 0], ["PSOE", 54414, 2], ["Vox", 12560, 0], ["ERC", 34331, 1], ["Junts", 33228, 1]]}, {"n": "Tarragona", "N": 6, "x": 30521, "p": [["PP", 51061, 1], ["PSOE", 121126, 2], ["Vox", 38039, 0], ["Sumar", 41719, 1], ["ERC", 55461, 1], ["Junts", 40791, 1]]}, {"n": "Pontevedra", "N": 7, "x": 11992, "p": [["PP", 227658, 3], ["PSOE", 179737, 3], ["Vox", 27539, 0], ["Sumar", 75615, 1]]}, {"n": "Murcia", "N": 10, "x": 7378, "p": [["PP", 307972, 4], ["PSOE", 189210, 3], ["Vox", 163124, 2], ["Sumar", 71578, 1]]}, {"n": "La Rioja", "N": 4, "x": 13768, "p": [["PP", 79715, 2], ["PSOE", 62322, 2], ["Vox", 17056, 0]]}];
+const COL={PP:'#1f77d4',PSOE:'#e03a3e',Vox:'#5aa02c',Sumar:'#c2417e',ERC:'#e6a700',Junts:'#14a3a3'};
+let cur=0;const $=id=>document.getElementById(id),f=n=>Math.round(n).toLocaleString('es-ES');
+function dh(v,N){const q=[];v.forEach((x,i)=>{for(let d=1;d<=N;d++)q.push({i,d,x})});
+q.sort((a,b)=>{const t=b.x*a.d-a.x*b.d;return t!==0?(t>0?1:-1):b.x-a.x});
+const s=v.map(()=>0);q.slice(0,N).forEach(e=>s[e.i]++);return s}
+function dots(el,s,P,base){el.innerHTML='';P.forEach((p,i)=>{for(let k=0;k<s[i];k++){const d=document.createElement('span');d.className='dot'+(base&&k>=base[i]?' new':'');d.style.background=COL[p[0]]||'#888';d.title=p[0];el.appendChild(d)}})}
+function draw(){const c=D[cur],P=c.p,x=+$('rg').value,v=P.map(p=>p[1]);
+const w=v.slice();w[0]+=x;w[P.findIndex(p=>p[0]=='Vox')]-=x;
+const s0=P.map(p=>p[2]),s1=dh(w,c.N),vi=P.findIndex(p=>p[0]=='Vox');
+const mx=Math.max(...v,...w);
+$('bars').innerHTML=P.map((p,i)=>`<div class="bar"><span class="nm">${p[0]}</span><span class="tr"><span class="fi" style="width:${v[i]/mx*100}%;background:${COL[p[0]]||'#888'};opacity:.35;display:block"></span></span><span class="v">${f(v[i])}</span></div><div class="bar"><span class="nm"></span><span class="tr"><span class="fi" style="width:${w[i]/mx*100}%;background:${COL[p[0]]||'#888'};display:block"></span></span><span class="v"><b>${f(w[i])}</b></span></div>`).join('')+'<p class="foot">Barra clara: original · barra intensa: tras el trasvase</p>';
+dots($('d0'),s0,P);dots($('d1'),s1,P,s0);
+let h='<tr><th>Partido</th><th>Votos</th>';for(let d=1;d<=c.N;d++)h+=`<th>÷${d}</th>`;h+='<th>Esc.</th></tr>';
+const q=[];w.forEach((vv,i)=>{for(let d=1;d<=c.N;d++)q.push({i,d})});
+P.forEach((p,i)=>{h+=`<tr><td><b>${p[0]}</b></td><td>${f(w[i])}</td>`;for(let d=1;d<=c.N;d++)h+=`<td class="${d<=s1[i]?'w':''}">${(w[i]/d).toLocaleString('es-ES',{maximumFractionDigits:2,minimumFractionDigits:2})}</td>`;h+=`<td><b>${s1[i]}</b></td></tr>`});
+$('tb').innerHTML=h;
+const gain=s1[0]-s0[0],voxok=s1[vi]>=s0[vi],lost=P.filter((p,i)=>s1[i]<s0[i]).map(p=>p[0]);
+const m=$('msg');
+if(gain>0&&voxok){m.className='ok';m.textContent=`El PP gana ${gain} escaño${gain>1?'s':''} (${s0[0]} → ${s1[0]}), Vox conserva los suyos (${s1[vi]}) y lo pierde: ${lost.join(', ')}.`}
+else if(gain>0){m.className='ko';m.textContent=`El PP gana ${gain} escaño, pero Vox pierde ${s0[vi]-s1[vi]} (${lost.join(', ')}).`}
+else if(!voxok){m.className='ko';m.textContent=`El PP no gana escaño y Vox ya pierde uno.`}
+else{m.className='ko';m.textContent=`Con ${f(x)} votos el PP sigue con ${s0[0]} escaños: todavía no basta. El mínimo es ${f(c.x)}.`}}
+function pick(i){cur=i;const c=D[cur],vx=c.p.find(p=>p[0]=='Vox')[1];$('rg').max=vx;$('nb').max=vx;$('rg').value=$('nb').value=c.x;
+[...$('tabs').children].forEach((b,j)=>b.classList.toggle('on',j==i));draw()}
+D.forEach((c,i)=>{const b=document.createElement('button');b.textContent=c.n;b.onclick=()=>pick(i);$('tabs').appendChild(b)});
+$('rg').oninput=()=>{$('nb').value=$('rg').value;draw()};
+$('nb').oninput=()=>{$('rg').value=Math.max(0,Math.min(+$('nb').max,+$('nb').value||0));draw()};
+$('mn').onclick=()=>{$('rg').value=$('nb').value=D[cur].x;draw()};
+pick(0);
+</script></body></html>
